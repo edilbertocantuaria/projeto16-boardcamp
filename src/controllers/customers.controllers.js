@@ -51,7 +51,7 @@ export async function updatingCustomerByID(req, res) {
         if (customers.rows.length === 0) return res.send("Nenhum cliente cadastrado com este ID");
 
         await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name.trim(), phone.trim(), cpf.trim(), birthday, id]);
-        res.sendStatus(201);
+        res.sendStatus(200);
     } catch (err) {
         res.status(500).send(err.message);
     }
