@@ -51,7 +51,7 @@ export async function registerCustomer(req, res) {
     name = name.trim();
     phone = phone.trim();
     cpf = cpf.trim();
-    birthday = new Date(birthday).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+//    birthday = new Date(birthday).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
     console.log(birthday);
 
