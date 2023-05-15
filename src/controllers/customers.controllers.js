@@ -85,8 +85,9 @@ export async function updatingCustomerByID(req, res) {
 
         if (customerAlreadyRegistered.rows.length != 0) return res.status(409).send("O CPF informado já está sendo utilizado em outro cadastro");
 
-        await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name, phone, cpf, birthday.toISOString().split("T")[0], id]);
+        await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name, phone, cpf, birthday, id]);
         res.sendStatus(200);
+
     } catch (err) {
         res.status(500).send(err.message);
     }
