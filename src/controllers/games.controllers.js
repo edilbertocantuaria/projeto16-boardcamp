@@ -3,7 +3,7 @@ import { db } from "../database/database.js";
 export async function findGames(req, res) {
     try {
         const games = await db.query("SELECT * FROM games");
-        console.log(games.rows);
+        if (games.rows.length === 0) return res.send("Nenhum jogo cadastrado");
         res.send(games.rows);
     } catch (err) {
         res.status(500).send(err.message);
