@@ -75,4 +75,27 @@ export async function registerRental(req, res) {
     }
 };
 
+export async function updatingRentalByID(req, res) {
+    let { name, phone, cpf, birthday } = req.body;
+    name = name.trim();
+    phone = phone.trim();
+    cpf = cpf.trim();
+    birthday = new Date(birthday).toLocaleDateString('pt-BR');
 
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.sendStatus(400);
+
+    try {
+        const customers = await db.query("SELECT * FROM customers WHERE id=$1", [id]);
+        if (customers.rows.length === 0) return res.status(404).send("Nenhum cliente cadastrado com este ID");
+
+        const customerAlreadyRegistered = await db.query("SELECT * FROM customers WHERE cpf=$1  AND id!=$02", [cpf, id]);
+
+        if (customerAlreadyRegistered.rows.length != 0) return res.status(409).send("O CPF informado já está sendo utilizado em outro cadastro");
+
+        await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name, phone, cpf, birthday, id]);
+        res.sendStatus(200);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
