@@ -37,9 +37,9 @@ export async function findCustomerByID(req, res) {
             cpf: customer.cpf,
             birthday: new Date(customer.birthday).toISOString().split('T')[0]
         }));
-        //console.log(formattedCustomers);
+        console.log(formattedCustomers[0]);
 
-        res.send(formattedCustomers);
+        res.send(formattedCustomers[0]);
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -51,7 +51,7 @@ export async function registerCustomer(req, res) {
     name = name.trim();
     phone = phone.trim();
     cpf = cpf.trim();
-//    birthday = new Date(birthday).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    //    birthday = new Date(birthday).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
     console.log(birthday);
 
@@ -79,7 +79,11 @@ export async function updatingCustomerByID(req, res) {
 
     try {
         const customers = await db.query("SELECT * FROM customers WHERE id=$1", [id]);
-        if (customers.rows.length === 0) return res.send("Nenhum cliente cadastrado com este ID");
+        if (customers.rows.length === 0) return res.status(404).send("Nenhum cliente cadastrado com este ID");
+
+        const customerAlreadyRegistered = await db.query("SELECT * FROM customers WHERE cpf=$1  AND id!=$02", [cpf, id]);
+
+        if (customerAlreadyRegistered.rows.length != 0) return res.status(409).send("O CPF informado já está sendo utilizado em outro cadastro");
 
         await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name, phone, cpf, birthday, id]);
         res.sendStatus(200);
