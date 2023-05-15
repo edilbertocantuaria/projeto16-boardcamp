@@ -3,7 +3,7 @@ import { db } from "../database/database.js";
 export async function findCustomers(req, res) {
     try {
         let customers = await db.query("SELECT * FROM customers");
-        if (customers.rows.length === 0) return res.status(400).send("Nenhum cliente cadastrado");
+        if (customers.rows.length === 0) return res.status(404).send("Nenhum cliente cadastrado");
         //console.log(customers);
 
         const formattedCustomers = customers.rows.map((customer) => ({
@@ -28,7 +28,7 @@ export async function findCustomerByID(req, res) {
 
     try {
         const customers = await db.query("SELECT * FROM customers WHERE id=$1", [id]);
-        if (customers.rows.length === 0) return res.status(400).send("Nenhum cliente cadastrado com este ID");
+        if (customers.rows.length === 0) return res.status(404).send("Nenhum cliente cadastrado com este ID");
 
         const formattedCustomers = customers.rows.map((customer) => ({
             id: customer.id,
