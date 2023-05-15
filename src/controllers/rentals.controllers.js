@@ -3,15 +3,15 @@ import { db } from "../database/database.js";
 export async function findRentals(req, res) {
     try {
         let rentals = await db.query(`
-            SELECT rentals.*,
-                customers.id AS customer_id,
-                customers.name AS customer_name,
-                games.id AS game_id,
-                games.name AS game_name
-            FROM rentals
-            JOIN customers ON rentals."customerId" = customers.id
-            JOIN games ON rentals."gameId" = games.id
-        `);
+                SELECT rentals.*,
+                    customers.id AS customer_id,
+                    customers.name AS customer_name,
+                    games.id AS game_id,
+                    games.name AS game_name
+                FROM rentals
+                JOIN customers ON rentals."customerId" = customers.id
+                JOIN games ON rentals."gameId" = games.id
+            `);
 
         if (rentals.rows.length === 0) {
             return res.status(404).send("Nenhum aluguel cadastrado");
@@ -46,13 +46,13 @@ export async function registerRental(req, res) {
     let { customerId, gameId, daysRented } = req.body;
 
     try {
-        const customer = await db.query("SELECT * FROM customers WHERE id=$1 ", [customerId]);
+        const customer = await db.query("SELECT * FROM customers WHERE id=$1 ORDER BY id ASC", [customerId]);
         if (customer.rows.length === 0) return res.status(400).send("ID do cliente não encontrado");
 
         const game = await db.query("SELECT * FROM games WHERE id=$1 ", [gameId]);
         if (game.rows.length === 0) return res.status(400).send("ID do jogo não encontrado");
 
-        if (daysRented === 0) return res.status(400).send("O dia de aluguel do jogo deve ser maior que zero");
+        if (daysRented <= 0) return res.status(400).send("O dia de aluguel do jogo deve ser maior que zero");
 
         const gameStock = game.rows[0].stockTotal;
 
@@ -76,26 +76,51 @@ export async function registerRental(req, res) {
 };
 
 export async function updatingRentalByID(req, res) {
-    let { name, phone, cpf, birthday } = req.body;
-    name = name.trim();
-    phone = phone.trim();
-    cpf = cpf.trim();
-    birthday = new Date(birthday).toLocaleDateString('pt-BR');
-
     const id = Number(req.params.id);
     if (isNaN(id)) return res.sendStatus(400);
 
     try {
-        const customers = await db.query("SELECT * FROM customers WHERE id=$1", [id]);
-        if (customers.rows.length === 0) return res.status(404).send("Nenhum cliente cadastrado com este ID");
+        const rental = await db.query("SELECT * FROM rentals WHERE id=$1 ", [id]);
+        if (rental.rows.length === 0) return res.status(404).send("Aluguel não encontrado");
 
-        const customerAlreadyRegistered = await db.query("SELECT * FROM customers WHERE cpf=$1  AND id!=$02", [cpf, id]);
+        if (rental.rows[0].returnDate != null) return res.status(400).send("Aluguel já finalizado!");
 
-        if (customerAlreadyRegistered.rows.length != 0) return res.status(409).send("O CPF informado já está sendo utilizado em outro cadastro");
+        const currentDate = new Date();
+        const returnDate = new Date(currentDate.toISOString().split("T")[0]);
+        const startingRentDate = new Date(rental.rows[0].rentDate.toISOString().split("T")[0]);
 
-        await db.query("UPDATE customers SET name=$1, phone=$2, cpf=$3, birthday=$4 WHERE id=$5", [name, phone, cpf, birthday, id]);
+        const timeDiff = Math.abs(returnDate.getTime() - startingRentDate.getTime());
+        const daysLater = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        let delayFee;
+        if (daysLater > rental.rows[0].daysRented) {
+            delayFee = daysLater * rental.rows[0].originalPrice;
+        } else {
+            delayFee = null;
+        }
+
+        await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3 `, [returnDate.toISOString().split("T")[0], delayFee, id]);
+
         res.sendStatus(200);
     } catch (err) {
         res.status(500).send(err.message);
     }
 };
+
+export async function deleteRental(req, res) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.sendStatus(400);
+
+    try {
+        const rental = await db.query("SELECT * FROM rentals WHERE id=$1 ", [id]);
+        if (rental.rows.length === 0) return res.status(404).send("Aluguel não encontrado");
+
+        if (rental.rows[0].returnDate === null) return res.status(400).send("Aluguel não finalizado!");
+
+        await db.query(`DELETE FROM rentals WHERE id=$1 `, [id]);
+
+        res.sendStatus(200);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+}
