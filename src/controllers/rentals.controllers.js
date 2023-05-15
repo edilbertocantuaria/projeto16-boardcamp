@@ -23,7 +23,7 @@ export async function findRentals(req, res) {
             gameId: rental.gameId,
             rentDate: new Date(rental.rentDate).toISOString().split('T')[0],
             daysRented: rental.daysRented,
-            returnDate: rental.returnDate,
+            returnDate: (rental.returnDate===null?  null : new Date (rental.returnDate).toISOString().split('T')[0]),
             originalPrice: rental.originalPrice,
             delayFee: rental.delayFee,
             customer: {
@@ -83,14 +83,20 @@ export async function updatingRentalByID(req, res) {
         const rental = await db.query("SELECT * FROM rentals WHERE id=$1 ", [id]);
         if (rental.rows.length === 0) return res.status(404).send("Aluguel não encontrado");
 
-        if (rental.rows[0].returnDate != null) return res.status(400).send("Aluguel já finalizado!");
+        //if (rental.rows[0].returnDate != null) return res.status(400).send("Aluguel já finalizado!");
 
-        const currentDate = new Date();
+        const currentDate = new Date()
         const returnDate = new Date(currentDate.toISOString().split("T")[0]);
+        console.log(currentDate);
+        console.log(returnDate);
+        const formattedReturnDate = returnDate.toISOString().split("T")[0];
+        console.log(formattedReturnDate);
         const startingRentDate = new Date(rental.rows[0].rentDate.toISOString().split("T")[0]);
 
         const timeDiff = Math.abs(returnDate.getTime() - startingRentDate.getTime());
         const daysLater = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        console.log(daysLater);
 
         let delayFee;
         if (daysLater > rental.rows[0].daysRented) {
@@ -99,7 +105,7 @@ export async function updatingRentalByID(req, res) {
             delayFee = null;
         }
 
-        await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3 `, [returnDate, delayFee, id]);
+        await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3 `, [formattedReturnDate, delayFee, id]);
 
         res.sendStatus(200);
     } catch (err) {
