@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(cors())
 app.use(router);
 
-const PORT = 5000;
-app.listen(PORT, () => {
-    console.log(chalk.green(`Rodando em http://localhost:${PORT}`));
+const port = process.env.PORT || 5000
+app.listen(port, () => {
+    console.log(chalk.green(`Rodando em http://localhost:${port}`));
 });
